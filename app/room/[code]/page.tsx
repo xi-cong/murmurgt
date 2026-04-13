@@ -42,6 +42,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   const [me, setMe] = useState({ user: '', color: '', sessionId: '' });
   const [memberCount, setMemberCount] = useState<number | null>(null);
   const [roomPaused, setRoomPaused] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [board, setBoard] = useState<LeaderEntry[]>([]);
   const [flash, setFlash] = useState<Record<string, { dir: FlashDir; ts: number }>>({});
   const [inputError, setInputError] = useState(false);
@@ -60,6 +61,18 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
     })
       .then(r => r.json())
       .then((d: { count: number }) => setMemberCount(d.count))
+      .catch(() => {});
+
+    fetch(`/api/room/messages?code=${encodeURIComponent(code)}`)
+      .then(r => r.json())
+      .then((history: { id: string; name: string; color: string; text: string; ts: number }[]) => {
+        console.log('[history] received', history.length, 'messages', history[0] ?? null);
+        setMsgs(prev => {
+          // Only seed history if no messages have arrived yet (e.g. from Ably)
+          if (prev.length > 0) return prev;
+          return history.map(m => ({ id: m.id, user: m.name, color: m.color, text: m.text, ts: m.ts }));
+        });
+      })
       .catch(() => {});
 
     const leave = () => {
@@ -282,34 +295,48 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
           position: 'relative',
         }}
       >
-        {/* Room code — top left */}
+        {/* Room code — top left, copy button — top right */}
         <div
           style={{
             position: 'absolute',
             top: 14,
             left: 18,
+            right: 18,
             zIndex: 10,
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
             userSelect: 'none',
           }}
         >
-          <span
-            style={{
-              fontSize: 11,
-              color: '#3d3d3d',
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-            }}
-          >
+          <span style={{ fontSize: 11, color: '#666', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
             {code}
           </span>
           {memberCount !== null && (
-            <span style={{ fontSize: 10, color: '#2e2e2e', letterSpacing: '0.06em' }}>
+            <span style={{ fontSize: 10, color: '#666', letterSpacing: '0.06em', marginLeft: 8 }}>
               {memberCount} {memberCount === 1 ? 'member' : 'members'}
             </span>
           )}
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href).then(() => {
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2_000);
+              });
+            }}
+            style={{
+              marginLeft: 'auto',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: 0,
+              fontSize: 14,
+              lineHeight: 1,
+              color: copied ? '#00FF87' : '#555',
+              transition: 'color 0.15s',
+            }}
+          >
+            {copied ? '✓' : '🔗'}
+          </button>
         </div>
 
         {/* Pause overlay */}
@@ -388,7 +415,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
               value={draft}
               onChange={e => setDraft(e.target.value.slice(0, 280))}
               onKeyDown={onKey}
-              placeholder={roomPaused ? 'room is paused' : 'say something...'}
+              placeholder={roomPaused ? 'room is paused' : 'say something…'}
               disabled={roomPaused}
               autoComplete="off"
               spellCheck={false}
@@ -406,6 +433,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                 transition: 'border-color 0.15s',
                 cursor: roomPaused ? 'not-allowed' : 'text',
               }}
+              // placeholder color via global style below
             />
             {/* Char counter */}
             <span
@@ -464,7 +492,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
           style={{
             padding: '14px 16px 12px',
             fontSize: 10,
-            color: '#3a3a3a',
+            color: '#666',
             letterSpacing: '0.18em',
             textTransform: 'uppercase',
             borderBottom: '1px solid #1a1a1a',
@@ -517,7 +545,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                       width: 20,
                       textAlign: 'right',
                       fontSize: 11,
-                      color: '#303030',
+                      color: '#555',
                       flexShrink: 0,
                     }}
                   >
@@ -557,7 +585,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
                   <span
                     style={{
                       fontSize: 12,
-                      color: '#383838',
+                      color: '#555',
                       flexShrink: 0,
                     }}
                   >
@@ -592,6 +620,7 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
           from { opacity: 0; transform: translateY(6px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        input::placeholder { color: #444; }
       `}</style>
     </div>
   );
