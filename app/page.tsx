@@ -288,7 +288,7 @@ export default function HomePage() {
             paddingLeft: 2,
             minHeight: 16,
           }}>
-            {error || 'enter a code to join or create a room'}
+            {error || 'type any code to create a room · or join an existing one'}
           </div>
         </div>
 
