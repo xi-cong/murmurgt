@@ -381,12 +381,12 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
         /* ── Mobile layout ── */
         @media (max-width: 767px) {
           .desktop-leaderboard { display: none !important; }
-          .mobile-leaderboard { display: flex !important; }
+          .mobile-leaderboard-overlay { display: block !important; }
         }
         /* ── Desktop layout ── */
         @media (min-width: 768px) {
           .desktop-leaderboard { display: flex !important; }
-          .mobile-leaderboard { display: none !important; }
+          .mobile-leaderboard-overlay { display: none !important; }
         }
       `}</style>
 
@@ -491,66 +491,50 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             ))}
           </div>
 
+          {/* Mobile leaderboard overlay — hidden on desktop via CSS */}
+          <div
+            className="mobile-leaderboard-overlay"
+            style={{
+              display: 'none',
+              position: 'absolute',
+              top: 40,
+              right: 8,
+              zIndex: 10,
+              pointerEvents: 'none',
+              background: 'rgba(0,0,0,0.7)',
+              border: '1px solid #222',
+              borderRadius: 6,
+              padding: '6px 8px',
+              minWidth: 110,
+            }}
+          >
+            {board.slice(0, 3).map(entry => {
+              const f = flash[entry.sessionId];
+              const isUp = f?.dir === 'up';
+              const isDown = f?.dir === 'down';
+              const name = entry.name.length > 8 ? entry.name.slice(0, 8) + '…' : entry.name;
+              return (
+                <div
+                  key={entry.sessionId}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '2px 0',
+                    borderRadius: 3,
+                    transition: 'background-color 0.35s ease',
+                    backgroundColor: isUp ? 'rgba(0,255,135,0.09)' : isDown ? 'rgba(255,59,59,0.09)' : 'transparent',
+                  }}
+                >
+                  <span style={{ fontSize: 10, color: '#555', flexShrink: 0, width: 10, textAlign: 'right' }}>{entry.rank}</span>
+                  <span style={{ fontSize: 10, color: entry.color, fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                  <span style={{ fontSize: 10, color: '#888', flexShrink: 0 }}>{entry.count}</span>
+                </div>
+              );
+            })}
+          </div>
+
           {inputBar}
-        </div>
-
-        {/* ── Mobile leaderboard panel — 100px, hidden on desktop via CSS ── */}
-        <div
-          className="mobile-leaderboard"
-          style={{
-            display: 'none',
-            width: 100,
-            background: '#0a0a0a',
-            borderLeft: '1px solid #1a1a1a',
-            flexDirection: 'column',
-            overflow: 'hidden',
-            flexShrink: 0,
-          }}
-        >
-          {/* Header */}
-          <div style={{ padding: '10px 8px 8px', fontSize: 9, color: '#444', letterSpacing: '0.14em', textTransform: 'uppercase', borderBottom: '1px solid #1a1a1a', userSelect: 'none' }}>
-            Leaderboard
-          </div>
-
-          {/* Rows — top 5 with flash animations */}
-          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'relative', height: board.slice(0, 5).length * ROW_H, transition: 'height 0.45s cubic-bezier(0.4,0,0.2,1)' }}>
-              {board.slice(0, 5).map(entry => {
-                const f = flash[entry.sessionId];
-                const isUp = f?.dir === 'up';
-                const isDown = f?.dir === 'down';
-                const name = entry.name.length > 8 ? entry.name.slice(0, 8) + '…' : entry.name;
-                return (
-                  <div
-                    key={entry.sessionId}
-                    style={{
-                      position: 'absolute',
-                      top: (entry.rank - 1) * ROW_H,
-                      left: 0,
-                      right: 0,
-                      height: ROW_H,
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0 6px',
-                      gap: 4,
-                      borderBottom: '1px solid #141414',
-                      transition: 'top 0.45s cubic-bezier(0.4,0,0.2,1), background-color 0.35s ease',
-                      backgroundColor: isUp ? 'rgba(0,255,135,0.09)' : isDown ? 'rgba(255,59,59,0.09)' : 'transparent',
-                    }}
-                  >
-                    <span style={{ fontSize: 10, color: '#555', flexShrink: 0, width: 12, textAlign: 'right' }}>{entry.rank}</span>
-                    <span style={{ fontSize: 10, color: entry.color, fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
-                    <span style={{ fontSize: 10, color: '#888', flexShrink: 0 }}>{entry.count}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {board.length === 0 && (
-              <div style={{ position: 'absolute', top: 20, left: 0, right: 0, textAlign: 'center', fontSize: 9, color: '#2a2a2a' }}>
-                —
-              </div>
-            )}
-          </div>
         </div>
 
         {/* ── Desktop leaderboard panel — hidden on mobile via CSS ── */}
