@@ -272,356 +272,394 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
   const charsLeft = 280 - draft.length;
   const inputBorderColor = (tooShort || inputError) ? '#FF3B3B55' : '#252525';
 
-  return (
-    <div
+  const copyButton = (
+    <button
+      onClick={() => {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2_000);
+        });
+      }}
       style={{
-        display: 'flex',
-        height: '100vh',
-        width: '100vw',
-        background: '#0e0e0e',
-        fontFamily: 'monospace',
-        color: '#fff',
-        overflow: 'hidden',
+        marginLeft: 'auto',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        padding: 0,
+        fontSize: 14,
+        lineHeight: 1,
+        color: copied ? '#00FF87' : '#555',
+        transition: 'color 0.15s',
       }}
     >
-      {/* ── Chat column ── */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          minWidth: 0,
-          position: 'relative',
-        }}
-      >
-        {/* Room code — top left, copy button — top right */}
-        <div
+      {copied ? '✓' : '🔗'}
+    </button>
+  );
+
+  const inputBar = (
+    <div
+      style={{
+        padding: '8px 18px 22px',
+        borderTop: '1px solid #191919',
+        display: 'flex',
+        gap: 8,
+        alignItems: 'center',
+        background: '#0e0e0e',
+      }}
+    >
+      <div style={{ flex: 1, position: 'relative' }}>
+        <input
+          value={draft}
+          onChange={e => setDraft(e.target.value.slice(0, 280))}
+          onKeyDown={onKey}
+          placeholder={roomPaused ? 'room is paused' : 'say something…'}
+          disabled={roomPaused}
+          autoComplete="off"
+          spellCheck={false}
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            background: '#141414',
+            border: `1px solid ${inputBorderColor}`,
+            outline: 'none',
+            borderRadius: 6,
+            color: roomPaused ? '#333' : '#fff',
+            fontFamily: 'monospace',
+            fontSize: 16,
+            padding: '10px 50px 10px 13px',
+            transition: 'border-color 0.15s',
+            cursor: roomPaused ? 'not-allowed' : 'text',
+          }}
+        />
+        <span
           style={{
             position: 'absolute',
-            top: 14,
-            left: 18,
-            right: 18,
-            zIndex: 10,
-            display: 'flex',
-            alignItems: 'center',
-            userSelect: 'none',
+            right: 10,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            fontSize: 10,
+            color: charsLeft < 40 ? (charsLeft < 10 ? '#FF3B3B' : '#FF8C00') : '#333',
+            pointerEvents: 'none',
+            transition: 'color 0.2s',
           }}
         >
-          <span style={{ fontSize: 11, color: '#666', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
-            {code}
-          </span>
-          {memberCount !== null && (
-            <span style={{ fontSize: 10, color: '#666', letterSpacing: '0.06em', marginLeft: 8 }}>
-              {memberCount} {memberCount === 1 ? 'member' : 'members'}
-            </span>
-          )}
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(window.location.href).then(() => {
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2_000);
-              });
-            }}
-            style={{
-              marginLeft: 'auto',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              fontSize: 14,
-              lineHeight: 1,
-              color: copied ? '#00FF87' : '#555',
-              transition: 'color 0.15s',
-            }}
-          >
-            {copied ? '✓' : '🔗'}
-          </button>
-        </div>
-
-        {/* Pause overlay */}
-        {roomPaused && (
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 20,
-              background: 'rgba(14,14,14,0.93)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              userSelect: 'none',
-              pointerEvents: 'all',
-            }}
-          >
-            <span style={{ fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#3a3a3a' }}>
-              this room is temporarily paused
-            </span>
-          </div>
-        )}
-
-        {/* Message stream — overflow hidden, newest at bottom */}
-        <div
-          style={{
-            flex: 1,
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-end',
-            padding: '52px 22px 10px',
-            gap: 4,
-          }}
-        >
-          {msgs.slice(-80).map(m => (
-            <div
-              key={m.id}
-              style={{
-                display: 'flex',
-                gap: 10,
-                fontSize: 14,
-                lineHeight: 1.55,
-                flexShrink: 0,
-                animation: 'fadeUp 0.18s ease-out',
-              }}
-            >
-              <span
-                style={{
-                  color: m.color,
-                  fontWeight: 700,
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}
-              >
-                {m.user}
-              </span>
-              <span style={{ color: '#d4d4d4', wordBreak: 'break-word' }}>{m.text}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Input bar — pinned to bottom */}
-        <div
-          style={{
-            padding: '8px 18px 22px',
-            borderTop: '1px solid #191919',
-            display: 'flex',
-            gap: 8,
-            alignItems: 'center',
-            background: '#0e0e0e',
-          }}
-        >
-          <div style={{ flex: 1, position: 'relative' }}>
-            <input
-              value={draft}
-              onChange={e => setDraft(e.target.value.slice(0, 280))}
-              onKeyDown={onKey}
-              placeholder={roomPaused ? 'room is paused' : 'say something…'}
-              disabled={roomPaused}
-              autoComplete="off"
-              spellCheck={false}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                background: '#141414',
-                border: `1px solid ${inputBorderColor}`,
-                outline: 'none',
-                borderRadius: 6,
-                color: roomPaused ? '#333' : '#fff',
-                fontFamily: 'monospace',
-                fontSize: 14,
-                padding: '10px 50px 10px 13px',
-                transition: 'border-color 0.15s',
-                cursor: roomPaused ? 'not-allowed' : 'text',
-              }}
-              // placeholder color via global style below
-            />
-            {/* Char counter */}
-            <span
-              style={{
-                position: 'absolute',
-                right: 10,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: 10,
-                color: charsLeft < 40 ? (charsLeft < 10 ? '#FF3B3B' : '#FF8C00') : '#333',
-                pointerEvents: 'none',
-                transition: 'color 0.2s',
-              }}
-            >
-              {draft.length > 0 ? charsLeft : ''}
-            </span>
-          </div>
-
-          <button
-            onClick={send}
-            disabled={!canSend}
-            style={{
-              background: canSend ? (me.color || '#ffffff') : '#1a1a1a',
-              color: canSend ? '#000000' : '#3a3a3a',
-              border: 'none',
-              borderRadius: 6,
-              fontFamily: 'monospace',
-              fontSize: 14,
-              fontWeight: 700,
-              padding: '10px 22px',
-              cursor: canSend ? 'pointer' : 'not-allowed',
-              transition: 'background 0.15s, color 0.15s',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-            }}
-          >
-            Murmur
-          </button>
-        </div>
+          {draft.length > 0 ? charsLeft : ''}
+        </span>
       </div>
-
-      {/* ── Leaderboard panel ── */}
-      <div
+      <button
+        onClick={send}
+        disabled={!canSend}
         style={{
-          width: 236,
-          background: '#0a0a0a',
-          borderLeft: '1px solid #1a1a1a',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
+          background: canSend ? (me.color || '#ffffff') : '#1a1a1a',
+          color: canSend ? '#000000' : '#3a3a3a',
+          border: 'none',
+          borderRadius: 6,
+          fontFamily: 'monospace',
+          fontSize: 14,
+          fontWeight: 700,
+          padding: '10px 0',
+          width: 80,
+          cursor: canSend ? 'pointer' : 'not-allowed',
+          transition: 'background 0.15s, color 0.15s',
           flexShrink: 0,
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            padding: '14px 16px 12px',
-            fontSize: 10,
-            color: '#666',
-            letterSpacing: '0.18em',
-            textTransform: 'uppercase',
-            borderBottom: '1px solid #1a1a1a',
-            userSelect: 'none',
-          }}
-        >
-          Leaderboard
-        </div>
+        Murmur
+      </button>
+    </div>
+  );
 
-        {/* Animated rows */}
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          <div
-            style={{
-              position: 'relative',
-              height: board.length * ROW_H,
-              transition: 'height 0.45s cubic-bezier(0.4,0,0.2,1)',
-            }}
-          >
-            {board.map(entry => {
-              const f = flash[entry.sessionId];
-              const isUp = f?.dir === 'up';
-              const isDown = f?.dir === 'down';
-
-              return (
-                <div
-                  key={entry.sessionId}
-                  style={{
-                    position: 'absolute',
-                    top: (entry.rank - 1) * ROW_H,
-                    left: 0,
-                    right: 0,
-                    height: ROW_H,
-                    display: 'flex',
-                    alignItems: 'center',
-                    padding: '0 15px',
-                    gap: 8,
-                    borderBottom: '1px solid #141414',
-                    transition:
-                      'top 0.45s cubic-bezier(0.4,0,0.2,1), background-color 0.35s ease',
-                    backgroundColor: isUp
-                      ? 'rgba(0,255,135,0.09)'
-                      : isDown
-                      ? 'rgba(255,59,59,0.09)'
-                      : 'transparent',
-                  }}
-                >
-                  {/* Rank number */}
-                  <span
-                    style={{
-                      width: 20,
-                      textAlign: 'right',
-                      fontSize: 11,
-                      color: '#555',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {entry.rank}
-                  </span>
-
-                  {/* Direction arrow */}
-                  <span
-                    style={{
-                      width: 10,
-                      fontSize: 9,
-                      textAlign: 'center',
-                      flexShrink: 0,
-                      color: isUp ? '#00FF87' : isDown ? '#FF3B3B' : 'transparent',
-                      transition: 'color 0.25s',
-                    }}
-                  >
-                    {isDown ? '▼' : '▲'}
-                  </span>
-
-                  {/* Username in their color */}
-                  <span
-                    style={{
-                      flex: 1,
-                      color: entry.color,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {entry.name}
-                  </span>
-
-                  {/* Message count */}
-                  <span
-                    style={{
-                      fontSize: 12,
-                      color: '#555',
-                      flexShrink: 0,
-                    }}
-                  >
-                    {entry.count}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Empty state */}
-          {board.length === 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 24,
-                left: 0,
-                right: 0,
-                textAlign: 'center',
-                fontSize: 11,
-                color: '#2a2a2a',
-              }}
-            >
-              no messages yet
-            </div>
-          )}
-        </div>
-      </div>
-
+  return (
+    <>
       <style>{`
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(6px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         input::placeholder { color: #444; }
+
+        /* ── Mobile layout ── */
+        @media (max-width: 767px) {
+          .room-root { flex-direction: column !important; }
+          .desktop-leaderboard { display: none !important; }
+          .mobile-leaderboard { display: flex !important; }
+          .chat-padding { padding: 48px 14px 8px !important; }
+          .input-font { font-size: 16px !important; }
+        }
+        /* ── Desktop layout ── */
+        @media (min-width: 768px) {
+          .desktop-leaderboard { display: flex !important; }
+          .mobile-leaderboard { display: none !important; }
+        }
       `}</style>
-    </div>
+
+      <div
+        className="room-root"
+        style={{
+          display: 'flex',
+          height: '100vh',
+          width: '100vw',
+          background: '#0e0e0e',
+          fontFamily: 'monospace',
+          color: '#fff',
+          overflow: 'hidden',
+        }}
+      >
+        {/* ── Chat column ── */}
+        <div
+          style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            minWidth: 0,
+            position: 'relative',
+          }}
+        >
+          {/* Top bar: room code left, copy right */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 14,
+              left: 18,
+              right: 18,
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              userSelect: 'none',
+            }}
+          >
+            <span style={{ fontSize: 11, color: '#666', letterSpacing: '0.14em', textTransform: 'uppercase' }}>
+              {code}
+            </span>
+            {memberCount !== null && (
+              <span style={{ fontSize: 10, color: '#666', letterSpacing: '0.06em', marginLeft: 8 }}>
+                {memberCount} {memberCount === 1 ? 'member' : 'members'}
+              </span>
+            )}
+            {copyButton}
+          </div>
+
+          {/* Mobile leaderboard strip — hidden on desktop via CSS */}
+          <div
+            className="mobile-leaderboard"
+            style={{
+              display: 'none',
+              alignItems: 'center',
+              gap: 6,
+              padding: '0 14px',
+              marginTop: 42,
+              height: 36,
+              overflowX: 'auto',
+              overflowY: 'hidden',
+              borderBottom: '1px solid #1a1a1a',
+              flexShrink: 0,
+              scrollbarWidth: 'none',
+            }}
+          >
+            {board.slice(0, 5).map(entry => (
+              <div
+                key={entry.sessionId}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  background: '#141414',
+                  borderRadius: 20,
+                  padding: '3px 10px',
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                <span style={{ color: entry.color, fontSize: 11, fontWeight: 700 }}>{entry.name}</span>
+                <span style={{ color: '#888', fontSize: 10 }}>{entry.count}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Pause overlay */}
+          {roomPaused && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                zIndex: 20,
+                background: 'rgba(14,14,14,0.93)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                userSelect: 'none',
+                pointerEvents: 'all',
+              }}
+            >
+              <span style={{ fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#3a3a3a' }}>
+                this room is temporarily paused
+              </span>
+            </div>
+          )}
+
+          {/* Message stream */}
+          <div
+            className="chat-padding"
+            style={{
+              flex: 1,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-end',
+              padding: '52px 22px 10px',
+              gap: 4,
+            }}
+          >
+            {msgs.slice(-80).map(m => (
+              <div
+                key={m.id}
+                style={{
+                  display: 'flex',
+                  gap: 10,
+                  fontSize: 14,
+                  lineHeight: 1.55,
+                  flexShrink: 0,
+                  animation: 'fadeUp 0.18s ease-out',
+                }}
+              >
+                <span style={{ color: m.color, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  {m.user}
+                </span>
+                <span style={{ color: '#d4d4d4', wordBreak: 'break-word' }}>{m.text}</span>
+              </div>
+            ))}
+          </div>
+
+          {inputBar}
+        </div>
+
+        {/* ── Desktop leaderboard panel — hidden on mobile via CSS ── */}
+        <div
+          className="desktop-leaderboard"
+          style={{
+            width: 236,
+            background: '#0a0a0a',
+            borderLeft: '1px solid #1a1a1a',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          {/* Header */}
+          <div
+            style={{
+              padding: '14px 16px 12px',
+              fontSize: 10,
+              color: '#555',
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              borderBottom: '1px solid #1a1a1a',
+              userSelect: 'none',
+            }}
+          >
+            Leaderboard
+          </div>
+
+          {/* Animated rows */}
+          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            <div
+              style={{
+                position: 'relative',
+                height: board.length * ROW_H,
+                transition: 'height 0.45s cubic-bezier(0.4,0,0.2,1)',
+              }}
+            >
+              {board.map(entry => {
+                const f = flash[entry.sessionId];
+                const isUp = f?.dir === 'up';
+                const isDown = f?.dir === 'down';
+
+                return (
+                  <div
+                    key={entry.sessionId}
+                    style={{
+                      position: 'absolute',
+                      top: (entry.rank - 1) * ROW_H,
+                      left: 0,
+                      right: 0,
+                      height: ROW_H,
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0 15px',
+                      gap: 8,
+                      borderBottom: '1px solid #141414',
+                      transition: 'top 0.45s cubic-bezier(0.4,0,0.2,1), background-color 0.35s ease',
+                      backgroundColor: isUp
+                        ? 'rgba(0,255,135,0.09)'
+                        : isDown
+                        ? 'rgba(255,59,59,0.09)'
+                        : 'transparent',
+                    }}
+                  >
+                    {/* Rank number */}
+                    <span style={{ width: 20, textAlign: 'right', fontSize: 11, color: '#666', flexShrink: 0 }}>
+                      {entry.rank}
+                    </span>
+
+                    {/* Direction arrow */}
+                    <span
+                      style={{
+                        width: 10,
+                        fontSize: 9,
+                        textAlign: 'center',
+                        flexShrink: 0,
+                        color: isUp ? '#00FF87' : isDown ? '#FF3B3B' : 'transparent',
+                        transition: 'color 0.25s',
+                      }}
+                    >
+                      {isDown ? '▼' : '▲'}
+                    </span>
+
+                    {/* Username */}
+                    <span
+                      style={{
+                        flex: 1,
+                        color: entry.color,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {entry.name}
+                    </span>
+
+                    {/* Message count */}
+                    <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>
+                      {entry.count}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {board.length === 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 24,
+                  left: 0,
+                  right: 0,
+                  textAlign: 'center',
+                  fontSize: 11,
+                  color: '#2a2a2a',
+                }}
+              >
+                no messages yet
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
+    </>
   );
 }
