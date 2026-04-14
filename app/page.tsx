@@ -272,9 +272,6 @@ export default function HomePage() {
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       <span style={{ fontWeight: 700, letterSpacing: '0.08em' }}>{r.roomCode}</span>
-                      <span style={{ fontSize: 11, color: '#555' }}>
-                        · {r.userCount} {r.userCount === 1 ? 'member' : 'members'}
-                      </span>
                     </div>
                   ))
                 )}
