@@ -380,11 +380,8 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
 
         /* ── Mobile layout ── */
         @media (max-width: 767px) {
-          .room-root { flex-direction: column !important; }
           .desktop-leaderboard { display: none !important; }
           .mobile-leaderboard { display: flex !important; }
-          .chat-padding { padding: 48px 14px 8px !important; }
-          .input-font { font-size: 16px !important; }
         }
         /* ── Desktop layout ── */
         @media (min-width: 768px) {
@@ -394,7 +391,6 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
       `}</style>
 
       <div
-        className="room-root"
         style={{
           display: 'flex',
           height: '100vh',
@@ -440,42 +436,6 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
             {copyButton}
           </div>
 
-          {/* Mobile leaderboard strip — hidden on desktop via CSS */}
-          <div
-            className="mobile-leaderboard"
-            style={{
-              display: 'none',
-              alignItems: 'center',
-              gap: 6,
-              padding: '0 14px',
-              marginTop: 42,
-              height: 36,
-              overflowX: 'auto',
-              overflowY: 'hidden',
-              borderBottom: '1px solid #1a1a1a',
-              flexShrink: 0,
-              scrollbarWidth: 'none',
-            }}
-          >
-            {board.slice(0, 5).map(entry => (
-              <div
-                key={entry.sessionId}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  background: '#141414',
-                  borderRadius: 20,
-                  padding: '3px 10px',
-                  flexShrink: 0,
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                <span style={{ color: entry.color, fontSize: 11, fontWeight: 700 }}>{entry.name}</span>
-                <span style={{ color: '#888', fontSize: 10 }}>{entry.count}</span>
-              </div>
-            ))}
-          </div>
 
           {/* Pause overlay */}
           {roomPaused && (
@@ -532,6 +492,65 @@ export default function RoomPage({ params }: { params: Promise<{ code: string }>
           </div>
 
           {inputBar}
+        </div>
+
+        {/* ── Mobile leaderboard panel — 100px, hidden on desktop via CSS ── */}
+        <div
+          className="mobile-leaderboard"
+          style={{
+            display: 'none',
+            width: 100,
+            background: '#0a0a0a',
+            borderLeft: '1px solid #1a1a1a',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            flexShrink: 0,
+          }}
+        >
+          {/* Header */}
+          <div style={{ padding: '10px 8px 8px', fontSize: 9, color: '#444', letterSpacing: '0.14em', textTransform: 'uppercase', borderBottom: '1px solid #1a1a1a', userSelect: 'none' }}>
+            Leaderboard
+          </div>
+
+          {/* Rows — top 5 with flash animations */}
+          <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'relative', height: board.slice(0, 5).length * ROW_H, transition: 'height 0.45s cubic-bezier(0.4,0,0.2,1)' }}>
+              {board.slice(0, 5).map(entry => {
+                const f = flash[entry.sessionId];
+                const isUp = f?.dir === 'up';
+                const isDown = f?.dir === 'down';
+                const name = entry.name.length > 8 ? entry.name.slice(0, 8) + '…' : entry.name;
+                return (
+                  <div
+                    key={entry.sessionId}
+                    style={{
+                      position: 'absolute',
+                      top: (entry.rank - 1) * ROW_H,
+                      left: 0,
+                      right: 0,
+                      height: ROW_H,
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '0 6px',
+                      gap: 4,
+                      borderBottom: '1px solid #141414',
+                      transition: 'top 0.45s cubic-bezier(0.4,0,0.2,1), background-color 0.35s ease',
+                      backgroundColor: isUp ? 'rgba(0,255,135,0.09)' : isDown ? 'rgba(255,59,59,0.09)' : 'transparent',
+                    }}
+                  >
+                    <span style={{ fontSize: 10, color: '#555', flexShrink: 0, width: 12, textAlign: 'right' }}>{entry.rank}</span>
+                    <span style={{ fontSize: 10, color: entry.color, fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                    <span style={{ fontSize: 10, color: '#888', flexShrink: 0 }}>{entry.count}</span>
+                  </div>
+                );
+              })}
+            </div>
+            {board.length === 0 && (
+              <div style={{ position: 'absolute', top: 20, left: 0, right: 0, textAlign: 'center', fontSize: 9, color: '#2a2a2a' }}>
+                —
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Desktop leaderboard panel — hidden on mobile via CSS ── */}
